@@ -8,43 +8,56 @@ function Cadastro() {
     const [email, setEmail] = useState('')
     const [senha, setSenha] = useState('')
     const [confirmarSenha, setConfirmarSenha] = useState('')
+    const [carregando, setCarregando] = useState(false)
+    const [mensagem, setMensagem] = useState('')
     const navigate = useNavigate()
 
     async function fazerCadastro(e) {
         e.preventDefault()
-        
+        setMensagem('')
+
         if (!nome || !rm || !email || !senha || !confirmarSenha) {
-            alert('Preencha todos os campos.')
+            setMensagem('Preencha todos os campos.')
             return
         }
 
         if (senha !== confirmarSenha) {
-            alert('As senhas não são iguais.')
+            setMensagem('As senhas não são iguais.')
             return
         }
 
         try {
-            const resposta = await axios.post(
-                'http://localhost:3000/usuarios/cadastro',
+            setCarregando(true)
+
+            const resposta = await axios.post('http://localhost:3000/alunos',
                 {
                     nome,
-                    rm,
                     email,
+                    rm,
                     senha
                 }
             )
-            console.log(resposta.data)
 
-            alert('Cadastro realizado com sucesso!')
+            alert(resposta.data.mensagem)
 
             navigate('/login')
+
         } catch (erro) {
             console.error(erro)
 
-            alert(
-                erro.response?.data?.mensagem ||
-                'Erro ao realizar cadastro.'
-            )
+            if (erro.response) {
+                setMensagem(
+                    erro.response.data.mensagem ||
+                    'Não foi possível realizar o cadastro.'
+                )
+            } else {
+                setMensagem(
+                    'Não foi possível conectar ao servidor.'
+                )
+            }
+
+        } finally {
+            setCarregando(false)
         }
     }
 
@@ -150,11 +163,20 @@ function Cadastro() {
                             />
                         </div>
 
+                        {mensagem && (
+                            <p className="text-sm text-red-600">
+                                {mensagem}
+                            </p>
+                        )}
+
                         <button
                             type="submit"
-                            className="w-full rounded-xl bg-[#a10b00] py-3.5 font-bold text-white transition hover:bg-[#850900]"
+                            disabled={carregando}
+                            className="w-full rounded-xl bg-[#a10b00] py-3.5 font-bold text-white transition hover:bg-[#850900] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            Criar conta
+                            {carregando
+                                ? 'Criando conta...'
+                                : 'Criar conta'}
                         </button>
                     </form>
 

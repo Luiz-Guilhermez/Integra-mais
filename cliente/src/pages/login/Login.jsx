@@ -5,36 +5,58 @@ import axios from 'axios'
 function Login() {
     const [email, setEmail] = useState('')
     const [senha, setSenha] = useState('')
+    const [carregando, setCarregando] = useState(false)
+    const [mensagem, setMensagem] = useState('')
     const navigate = useNavigate()
 
     async function fazerLogin(e) {
         e.preventDefault()
+        setMensagem('')
 
         if (!email || !senha) {
-            alert('Preencha todos os campos.')
+            setMensagem('Preencha todos os campos.')
             return
         }
 
         try {
+            setCarregando(true)
+
             const resposta = await axios.post(
-                'http://localhost:3000/usuarios/login',
+                'http://localhost:3000/login',
                 {
                     email,
                     senha
                 }
             )
-            console.log(resposta.data)
 
-            alert('Login realizado com sucesso!')
+            sessionStorage.setItem(
+                'token',
+                resposta.data.token
+            );
+            
+            sessionStorage.setItem(
+                'aluno',
+                JSON.stringify(resposta.data.aluno)
+            )
 
             navigate('/feed')
+
         } catch (erro) {
             console.error(erro)
 
-            alert(
-                erro.response?.data?.mensagem ||
-                'Erro ao realizar login.'
-            )
+            if (erro.response) {
+                setMensagem(
+                    erro.response.data.mensagem ||
+                    'Não foi possível realizar o login.'
+                )
+            } else {
+                setMensagem(
+                    'Não foi possível conectar ao servidor.'
+                )
+            }
+
+        } finally {
+            setCarregando(false)
         }
     }
 
@@ -95,19 +117,26 @@ function Login() {
                         </div>
 
                         <div className="flex justify-end">
-                            <button
-                                type="button"
+                            <Link
+                                to='/recuperar-senha'
                                 className="text-sm font-semibold text-[#a10b00] hover:underline"
                             >
                                 Esqueci minha senha
-                            </button>
+                            </Link>
                         </div>
+
+                        {mensagem && (
+                            <p className="text-sm text-red-600">
+                                {mensagem}
+                            </p>
+                        )}
 
                         <button
                             type="submit"
-                            className="w-full rounded-xl bg-[#a10b00] py-3.5 font-bold text-white transition hover:bg-[#850900]"
+                            disabled={carregando}
+                            className="w-full rounded-xl bg-[#a10b00] py-3.5 font-bold text-white transition hover:bg-[#850900] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                            Entrar
+                            {carregando ? 'Entrando...' : 'Entrar'}
                         </button>
                     </form>
 

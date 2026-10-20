@@ -1,23 +1,7 @@
-// import Nav from '../components/Nav'
-// import GloboDigital from '../components/GloboDigital'
-
-// function Home(){
-//     return(
-//         <>
-//             <div className='relative w-64 h-3000'>
-//                 <div className='absolute inset-4 z-20 w-40 h-40'><Nav/></div>
-//                 <div className='absolute inset-0 z-10 w-40 h-40'><GloboDigital/></div>
-//             </div>
-//         </>
-//     )
-// }
-
-// export default Home
-
 import { Link } from 'react-router-dom'
-import NavHome from '../components/NavHome'
-import GloboDigital from '../components/GloboDigital'
-import SobreSenai from '../components/SobreSenai'
+import NavHome from '../../components/NavHome'
+import GloboDigital from '../../components/GloboDigital'
+import SobreSenai from '../../components/SobreSenai'
 
 function Home() {
     return (

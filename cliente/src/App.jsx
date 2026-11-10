@@ -9,6 +9,7 @@ import Admin from './pages/admin/Admin'
 import RotaAdmin from './routes/RotaAdmin'
 import RecuperarSenha from './pages/recuperarSenha/RecuperarSenha'
 import RedefinirSenha from './pages/redefinirSenha/RedefinirSenha'
+import Chat from './pages/Chat/Chat'
 import './App.css'
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
                 <Route path='/login' element={<Login />} />
                 <Route path='/recuperar-senha' element={<RecuperarSenha />}/>
                 <Route path='/redefinir-senha' element={<RedefinirSenha />}/>
+                <Route path="/chat" element={<Chat />} />
             </Routes>
         </BrowserRouter>
     )

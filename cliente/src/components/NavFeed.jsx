@@ -34,6 +34,13 @@ function NavFeed() {
                     Feed
                 </Link>
 
+                <Link
+                    to="/chat"
+                    className="text-lg text-black transition hover:text-[#a10b00]"
+                >
+                    Chat
+                </Link>
+
                 {aluno?.tipo === 'admin' && (
                     <Link
                         to="/admin"

@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react'
 import api from '../services/api'
 
@@ -81,9 +80,7 @@ function MyPosts() {
             setCarregando(true)
             setErro('')
 
-            const resposta = await api.get(
-                `/minhas-postagens`
-            )
+            const resposta = await api.get('/minhas-postagens')
 
             setPosts(resposta.data)
 
@@ -110,7 +107,7 @@ function MyPosts() {
 
     function iniciarEdicao(post) {
         setPostEditando(post.id)
-        setNovoConteudo(post.conteudo)
+        setNovoConteudo(post.conteudo || '')
         setErro('')
         setMensagem('')
     }
@@ -142,7 +139,7 @@ function MyPosts() {
             setPosts((postsAtuais) =>
                 postsAtuais.map((post) =>
                     String(post.id) === String(postId)
-                        ? resposta.data.post
+                        ? { ...post, ...resposta.data.post }
                         : post
                 )
             )
@@ -505,9 +502,38 @@ function MyPosts() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-gray-700">
-                                            {post.conteudo}
-                                        </p>
+                                        <>
+                                            {post.conteudo && (
+                                                <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-gray-700">
+                                                    {post.conteudo}
+                                                </p>
+                                            )}
+
+                                            {post.midias?.length > 0 && (
+                                                <div className="mt-4 grid grid-cols-2 gap-2">
+                                                    {post.midias.map((midia) => (
+                                                        <div
+                                                            key={midia.id}
+                                                            className="overflow-hidden rounded-xl"
+                                                        >
+                                                            {midia.tipo === 'imagem' ? (
+                                                                <img
+                                                                    src={`http://localhost:3000/${midia.caminho_arquivo}`}
+                                                                    alt={midia.nome_original}
+                                                                    className="max-h-96 w-full rounded-xl object-cover"
+                                                                />
+                                                            ) : (
+                                                                <video
+                                                                    src={`http://localhost:3000/${midia.caminho_arquivo}`}
+                                                                    controls
+                                                                    className="max-h-96 w-full rounded-xl"
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>

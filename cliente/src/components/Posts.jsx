@@ -1,4 +1,4 @@
- import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import api from '../services/api'
 
 function Posts() {
@@ -15,9 +15,50 @@ function Posts() {
     const [textoComentario, setTextoComentario] = useState({})
     const [comentarioEnviando, setComentarioEnviando] = useState({})
     const [comentarioExcluindo, setComentarioExcluindo] = useState({})
+    const [midias, setMidias] = useState([])
+    const [previews, setPreviews] = useState([])
+
     const aluno = JSON.parse(
         sessionStorage.getItem('aluno') || 'null'
     )
+
+    function selecionarMidias(e) {
+        const arquivos = Array.from(e.target.files)
+
+        if (arquivos.length > 5) {
+            setErro('Você pode selecionar no máximo 5 arquivos.')
+            e.target.value = ''
+            return
+        }
+
+        const arquivosInvalidos = arquivos.filter((arquivo) => {
+            return !(
+                arquivo.type.startsWith('image/') ||
+                arquivo.type.startsWith('video/')
+            )
+        })
+
+        if (arquivosInvalidos.length > 0) {
+            setErro('Selecione apenas imagens ou vídeos.')
+            e.target.value = ''
+            return
+        }
+
+        previews.forEach((preview) => {
+            URL.revokeObjectURL(preview.url)
+        })
+
+        setErro('')
+        setMidias(arquivos)
+
+        const novasPreviews = arquivos.map((arquivo) => ({
+            url: URL.createObjectURL(arquivo),
+            tipo: arquivo.type.startsWith('image/') ? 'imagem' : 'video',
+            nome: arquivo.name
+        }))
+
+        setPreviews(novasPreviews)
+    }
 
     async function buscarCurtidas(postId) {
         try {
@@ -86,13 +127,19 @@ function Posts() {
 
     useEffect(() => {
         buscarPosts()
+
+        return () => {
+            previews.forEach((preview) => {
+                URL.revokeObjectURL(preview.url)
+            })
+        }
     }, [])
 
     async function publicarPost(e) {
         e.preventDefault()
 
-        if (!conteudo.trim()) {
-            setErro('Digite algo antes de publicar.')
+        if (!conteudo.trim() && midias.length === 0) {
+            setErro('Digite algo ou selecione uma mídia antes de publicar.')
             return
         }
 
@@ -106,11 +153,24 @@ function Posts() {
             setErro('')
             setMensagem('')
 
-            await api.post('/posts', {
-                conteudo: conteudo.trim()
+            const formData = new FormData()
+
+            formData.append('conteudo', conteudo.trim())
+
+            midias.forEach((arquivo) => {
+                formData.append('midias', arquivo)
+            })
+
+            await api.post('/posts', formData)
+
+            previews.forEach((preview) => {
+                URL.revokeObjectURL(preview.url)
             })
 
             setConteudo('')
+            setMidias([])
+            setPreviews([])
+
             setMensagem('Publicação criada com sucesso!')
 
             await buscarPosts()
@@ -245,7 +305,7 @@ function Posts() {
             }))
 
             await api.delete(
-                `/comentarios/${comentarioId}`,
+                `/comentarios/${comentarioId}`
             )
 
             setComentarios((estadoAtual) => ({
@@ -298,7 +358,7 @@ function Posts() {
                         {aluno?.nome?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
 
-                    <div className="flex-1">
+                    <div className="min-w-0 flex-1">
                         <textarea
                             value={conteudo}
                             onChange={(e) => setConteudo(e.target.value)}
@@ -307,10 +367,50 @@ function Posts() {
                             className="min-h-[90px] w-full resize-none rounded-xl border border-gray-200 p-4 text-sm outline-none transition placeholder:text-gray-400 focus:border-[#a10b00]"
                         />
 
+                        <input
+                            type="file"
+                            accept="image/*,video/*"
+                            multiple
+                            onChange={selecionarMidias}
+                            className="mt-3 block w-full text-sm text-gray-500 file:mr-3 file:rounded-full file:border-0 file:bg-gray-100 file:px-4 file:py-2 file:font-semibold file:text-gray-700 hover:file:bg-gray-200"
+                        />
+
+                        {previews.length > 0 && (
+                            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                {previews.map((preview, index) => (
+                                    <div
+                                        key={index}
+                                        className="overflow-hidden rounded-xl border border-gray-200"
+                                    >
+                                        {preview.tipo === 'imagem' ? (
+                                            <img
+                                                src={preview.url}
+                                                alt={preview.nome}
+                                                className="h-36 w-full object-cover"
+                                            />
+                                        ) : (
+                                            <video
+                                                src={preview.url}
+                                                controls
+                                                className="h-36 w-full object-cover"
+                                            />
+                                        )}
+
+                                        <p className="truncate p-2 text-xs text-gray-500">
+                                            {preview.nome}
+                                        </p>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
                         <div className="mt-3 flex justify-end">
                             <button
                                 type="submit"
-                                disabled={publicando || !conteudo.trim()}
+                                disabled={
+                                    publicando ||
+                                    (!conteudo.trim() && midias.length === 0)
+                                }
                                 className="rounded-full bg-[#a10b00] px-6 py-2.5 text-sm font-bold text-white transition hover:bg-[#850900] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 {publicando ? 'Publicando...' : 'Publicar'}
@@ -371,9 +471,36 @@ function Posts() {
                                         </span>
                                     </div>
 
-                                    <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-gray-700">
-                                        {post.conteudo}
-                                    </p>
+                                    {post.conteudo && (
+                                        <p className="mt-3 whitespace-pre-wrap break-words text-sm leading-6 text-gray-700">
+                                            {post.conteudo}
+                                        </p>
+                                    )}
+
+                                    {post.midias?.length > 0 && (
+                                        <div className="mt-4 grid grid-cols-2 gap-2">
+                                            {post.midias.map((midia) => (
+                                                <div
+                                                    key={midia.id}
+                                                    className="overflow-hidden rounded-xl"
+                                                >
+                                                    {midia.tipo === 'imagem' ? (
+                                                        <img
+                                                            src={`http://localhost:3000/${midia.caminho_arquivo}`}
+                                                            alt={midia.nome_original}
+                                                            className="max-h-96 w-full rounded-xl object-cover"
+                                                        />
+                                                    ) : (
+                                                        <video
+                                                            src={`http://localhost:3000/${midia.caminho_arquivo}`}
+                                                            controls
+                                                            className="max-h-96 w-full rounded-xl"
+                                                        />
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -388,14 +515,11 @@ function Posts() {
                                     }`}
                                 >
                                     <span>
-                                        {curtidas[post.id]?.curtido
-                                            ? '❤️'
-                                            : '🤍'}
+                                        {curtidas[post.id]?.curtido ? '❤️' : '🤍'}
                                     </span>
 
                                     <span>
                                         {curtidas[post.id]?.total ?? 0}{' '}
-
                                         {curtidas[post.id]?.total === 1
                                             ? 'curtida'
                                             : 'curtidas'}
